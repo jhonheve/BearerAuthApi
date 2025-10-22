@@ -1,21 +1,21 @@
 using IdentityService.Domain.Entities;
 using IdentityService.Domain.Repositories;
+using IdentityService.Domain.ValueObjects;
 
 namespace IdentityService.Infrastructure.Repositories;
 
-/// <summary>
-/// Provides an in-memory implementation of the IUserRepository interface for managing user data. Intended for scenarios
-/// such as testing or prototyping where persistent storage is not required.
-/// </summary>
-/// <remarks>All user data is stored in memory and will be lost when the application is stopped or restarted. This
-/// implementation is not thread-safe and should not be used in production environments. For persistent or concurrent
 public class InMemoryUserRepository : IUserRepository
 {
-    private readonly List<UserModel> _users = [];
+    private readonly List<UserModel> _users = new();
+
+    public Task<UserModel?> GetByEmailAsync(Email email)
+    {
+        return GetByEmailAsync(email.Value);
+    }
 
     public Task<UserModel?> GetByEmailAsync(string email)
     {
-        var user = _users.FirstOrDefault(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+        var user = _users.FirstOrDefault(u => u.Email.Value.Equals(email, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(user);
     }
 
@@ -33,23 +33,22 @@ public class InMemoryUserRepository : IUserRepository
 
     public Task<UserModel> UpdateAsync(UserModel user)
     {
-        var existingUser = _users.FirstOrDefault(u => u.Id == user.Id);
-        if (existingUser == null)
-        {
-            throw new InvalidOperationException("User not found");
-        }
+        var existingUser = _users.FirstOrDefault(u => u.Id == user.Id)
+            ?? throw new InvalidOperationException("User not found");
+        
+        _users.Remove(existingUser);
+        _users.Add(user);
+        return Task.FromResult(user);
+    }
 
-        existingUser.FirstName = user.FirstName;
-        existingUser.LastName = user.LastName;
-        existingUser.Email = user.Email;
-        existingUser.UpdatedAt = DateTime.UtcNow;
-        existingUser.IsActive = user.IsActive;
-        return Task.FromResult(existingUser);
+    public Task<bool> EmailExistsAsync(Email email)
+    {
+        return EmailExistsAsync(email.Value);
     }
 
     public Task<bool> EmailExistsAsync(string email)
     {
-        var exists = _users.Any(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+        var exists = _users.Any(u => u.Email.Value.Equals(email, StringComparison.OrdinalIgnoreCase));
         return Task.FromResult(exists);
     }
 }

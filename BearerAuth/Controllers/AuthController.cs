@@ -6,29 +6,23 @@ namespace BearerAuth.Controllers;
 
 [ApiController]
 [Route("auth-api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController(IAuthService authService) : ControllerBase
 {
-    private readonly IAuthService _authService;
-
-    public AuthController(IAuthService authService)
- {
-        _authService = authService;
-    }
 
     [HttpPost("signup")]
     public async Task<IActionResult> SignUp([FromBody] SignUpRequestDto request)
     {
         if (!ModelState.IsValid)
         {
-      return BadRequest(ModelState);
+            return BadRequest(ModelState);
         }
 
-    var result = await _authService.SignUpAsync(request);
+        var result = await authService.SignUpAsync(request);
 
         if (result.IsSuccess)
- {
-return CreatedAtAction(nameof(SignUp), new { id = result.Data!.Id }, result.Data);
-}
+        {
+            return CreatedAtAction(nameof(SignUp), new { id = result.Data!.Id }, result.Data);
+        }
 
         return BadRequest(new { message = result.Message, errors = result.Errors });
     }

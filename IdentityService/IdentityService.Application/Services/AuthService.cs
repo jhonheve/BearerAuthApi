@@ -1,9 +1,10 @@
 using IdentityService.Application.DTOs;
 using IdentityService.Application.Common;
-using IdentityService.Application.Services;
-using IdentityService.Domain.Entities;
 using IdentityService.Domain.Repositories;
 using IdentityService.Domain.Services;
+using IdentityService.Domain.ValueObjects;
+using IdentityService.Domain.Exceptions;
+using IdentityService.Domain.Factories;
 
 namespace IdentityService.Application.Services;
 
@@ -22,43 +23,39 @@ public class AuthService : IAuthService
     {
         try
         {
-            // Check if email already exists
             var emailExists = await _userRepository.EmailExistsAsync(request.Email);
             if (emailExists)
             {
                 return Result<SignUpResponseDto>.Failure("Email already exists");
             }
 
-            // Hash password
-            var passwordHash = _passwordService.HashPassword(request.Password, out string salt);
+            var email = new Email(request.Email);
+            var password = new Password(request.Password);
 
-            // Create user
-            var user = new UserModel
-            {
-                Id = Guid.NewGuid(),
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                Email = request.Email.ToLowerInvariant(),
-                PasswordHash = passwordHash,
-                Salt = salt,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
-            };
-
+            // Create user using factory method (business rules enforced here)
+            var user = UserFactory.Create(request.FirstName, request.LastName, email, password, _passwordService);
             var createdUser = await _userRepository.CreateAsync(user);
 
-            // Map to response DTO
+            // Map to response DTO, future mapping can be done with AutoMapper or similar
             var response = new SignUpResponseDto
             {
                 Id = createdUser.Id,
                 FirstName = createdUser.FirstName,
                 LastName = createdUser.LastName,
-                Email = createdUser.Email,
+                Email = createdUser.Email.Value, // Convert value object to string
                 CreatedAt = createdUser.CreatedAt,
                 IsActive = createdUser.IsActive
             };
 
             return Result<SignUpResponseDto>.Success(response, "User created successfully");
+        }
+        catch (ArgumentException ex) // Domain validation failures (value objects)
+        {
+            return Result<SignUpResponseDto>.Failure(ex.Message);
+        }
+        catch (DomainException ex) // Business rule violations (entity)
+        {
+            return Result<SignUpResponseDto>.Failure(ex.Message);
         }
         catch (Exception ex)
         {
