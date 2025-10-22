@@ -19,11 +19,11 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         var result = await authService.SignUpAsync(request);
 
-        if (result.IsSuccess)
+        if (!result.IsSuccess)
         {
-            return CreatedAtAction(nameof(SignUp), new { id = result.Data!.Id }, result.Data);
+            return BadRequest(result);
         }
 
-        return BadRequest(new { message = result.Message, errors = result.Errors });
+        return CreatedAtAction(nameof(SignUp), new { id = result.Data!.Id }, result.Data);
     }
 }
