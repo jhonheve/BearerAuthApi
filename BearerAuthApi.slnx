@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/IdentityService/">
+    <Project Path="IdentityService/IdentityService.Application/IdentityService.Application.csproj" Id="a39d9705-b4b0-4953-a117-9152e74dac93" />
+    <Project Path="IdentityService/IdentityService.Domain/IdentityService.Domain.csproj" Id="a67bb861-337d-4ced-8a5a-e7652a092a78" />
+    <Project Path="IdentityService/IdentityService.Infrastructure/IdentityService.Infrastructure.csproj" Id="58e6c58e-4a29-49c2-a22e-59196aeb9882" />
+  </Folder>
+  <Project Path="BearerAuth/BearerAuth.csproj" />
+</Solution>
